@@ -6,22 +6,33 @@ if (!require("doParallel")) {
 library(foreach)
 library(doParallel)
 
-#start time
-strt<-Sys.time()
+#run experiments with different data sizes for parallel algorithm
+experiment_seq<-function(data){
+  #start time
+  strt<-Sys.time()
+  
+  seq_sort(data)
+  
+  #end time
+  now <- Sys.time()
+  t <- as.numeric(difftime(now, strt, units = "secs"))
+  return(t) 
+  
+}
 
-data <- read.csv("bank-full.csv", header = T, sep = ";")
-data_100 <- data[0:100,]
-data_1000 <- data[0:1000,]
-data_10000 <- data[0:10000,]
-
-input <- as.character(data_10000$job)
-#seq_sort(input)
-pl_sort(input)
-
-#write(x = as.character(data_100$job), file = "d100.txt", sep = "\t", append = T)
-#write(x = as.character(data_1000$job), file = "d1000.txt", sep = "\t", append = T)
-#write(x = as.character(data_10000$job), file = "d10000.txt", sep = "\t", append = T)
-
+#run experiments with different data sizes for sequencial algorithm
+experiment_pl<-function(data){
+  #start time
+  strt<-Sys.time()
+  
+  pl_sort(data)
+  
+  #end time
+  now <- Sys.time()
+  t <- as.numeric(difftime(now, strt, units = "secs"))
+  return(t)
+  
+}
 
 #merge sort
 pl_mmerge<-function(a,b) {
@@ -83,22 +94,190 @@ seq_mmergesort<-function(A) {
 seq_sort<-function(input){
   #sort
   ordenado <- seq_mmergesort(input)
-  write(x = ordenado, file = "output.txt", sep = "\t", append = T)
 }
 
 pl_sort<-function(input){
-  #number of clusters
-  cl <- makeCluster(100)
-  registerDoParallel(cl)
   
   #sort
   ordenado <- pl_mmergesort(input)
-  ordenado
-  write(x = ordenado, file = "output.txt", sep = "\t", append = T)
   
-  #stop parallel
-  stopImplicitCluster()
+
+  
 }
 
-#end time
-print(Sys.time()-strt)
+save_result<-function(data){
+  write.table(data, "result.csv", quote = F, row.names = F, sep=";")
+}
+
+df_append <- function(v){
+  df[nrow(df) + 1, ] <- v
+}
+
+do_treatment <- function(t, data, r){
+  time <- 0
+  algorithm <- ""
+  size1 <- 0
+  size2 <- 0
+  
+  switch(t, 
+         t1={
+           algorithm <- "sequencial"
+           size1 <- 100
+           size2 <- 1000
+         },
+         t2={
+           algorithm <- "parallel"
+           size1 <- 100
+           size2 <- 1000
+           
+         },
+         t3={
+           algorithm <- "sequencial"
+           size1 <- 1000
+           size2 <- 10000
+           
+         },
+         t4={
+           algorithm <- "parallel"
+           size1 <- 1000
+           size2 <- 10000
+           
+         },
+         t5={
+           algorithm <- "sequencial"
+           size1 <- 100
+           size2 <- 10000
+           
+         },
+         t6={
+           algorithm <- "parallel"
+           size1 <- 100
+           size2 <- 10000
+           
+         })
+  
+  
+  data1 <- data[0:size1,]
+  data1 <- as.character(data1$job)
+  
+  data2 <- data[0:size2,]
+  data2 <- as.character(data2$job)
+  
+  v1 <- c()
+  v2 <- c()
+  
+  if(algorithm == "sequencial") {
+    experiment_seq(data1)
+    time1 <- experiment_seq(data1)
+    time2 <- experiment_seq(data2)
+  }
+  else{
+    time1 <- experiment_pl(data1)
+    time2 <- experiment_pl(data2)
+    
+  } 
+  v1 <- c(algorithm, size1, time1, t, r)
+  v2 <- c(algorithm, size2, time2, t, r)
+  df_append(v1)
+  df_append(v2)
+  
+}
+
+do_repetition <- function(treatment, n_repetition, data){
+  for(r in n_repetition){
+    for (t in treatment) {
+      do_treatment(t, data, r)
+    }  
+  }
+  
+}
+
+data <- read.csv("bank-full.csv", header = T, sep = ";")
+
+
+#metrics
+sizes <- c(100,1000,10000)
+algorithm <- c("sequencial", "parallel")
+treatment <- c("t1", "t2", "t3", "t4", "t5", "t6")
+#treatment <- c("t2")
+repetition <- c(1,2,3,4,5,6,7,8,9,10)
+
+df <- data.frame(type= character(0), size= numeric(0), time = numeric(0), n_treatment = character(0) ,n_repetition = numeric(0), stringsAsFactors=FALSE)
+
+
+#number of clusters
+registerDoParallel(4)
+
+for(r in repetition){
+  for (t in treatment) {
+    #do_repetition(treatment, repetition, data, df)
+    time <- 0
+    algorithm <- ""
+    size1 <- 0
+    size2 <- 0
+    
+    switch(t, 
+           t1={
+             algorithm <- "sequencial"
+             size1 <- 100
+             size2 <- 1000
+           },
+           t2={
+             algorithm <- "parallel"
+             size1 <- 100
+             size2 <- 1000
+             
+           },
+           t3={
+             algorithm <- "sequencial"
+             size1 <- 1000
+             size2 <- 10000
+             
+           },
+           t4={
+             algorithm <- "parallel"
+             size1 <- 1000
+             size2 <- 10000
+             
+           },
+           t5={
+             algorithm <- "sequencial"
+             size1 <- 100
+             size2 <- 10000
+             
+           },
+           t6={
+             algorithm <- "parallel"
+             size1 <- 100
+             size2 <- 10000
+             
+           })
+    
+    
+    data1 <- data[0:size1,]
+    data1 <- as.character(data1$job)
+    
+    data2 <- data[0:size2,]
+    data2 <- as.character(data2$job)
+    
+    v1 <- c()
+    v2 <- c()
+    
+    if(algorithm == "sequencial") {
+      time1 <- experiment_seq(data1)
+      time2 <- experiment_seq(data2)
+    }else{
+      time1 <- experiment_pl(data1)
+      time2 <- experiment_pl(data2)
+    } 
+    v1 <- c(algorithm, size1, time1, t, r)
+    v2 <- c(algorithm, size2, time2, t, r)
+    df[nrow(df) + 1, ] <- v1
+    df[nrow(df) + 1, ] <- v2
+    
+  }  
+}
+#stop parallel
+stopImplicitCluster()
+
+save_result(data = df)
