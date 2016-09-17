@@ -1,0 +1,9 @@
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = analysis)
+
+$type
+                         diff       lwr      upr    p adj
+sequencial-parallel -68.88478 -100.8432 -36.9264 3.54e-05
+
