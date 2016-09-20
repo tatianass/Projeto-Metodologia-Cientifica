@@ -1,2 +1,2 @@
 # Projeto-Metodologia-Cientifica
-Análise dos algoritmos de sort em paralelo e em sequencial.
+Data Analysis of sort parallel and sequencial algorithms.
